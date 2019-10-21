@@ -1069,7 +1069,7 @@ namespace TelxCCSharp
                     Console.WriteLine("              if REF (unix timestamp) is omitted, use current system time,");
                     Console.WriteLine("              telxcc will automatically switch to transport stream UTC timestamps when available");
 
-                    return (ExitSuccess);
+                    return ExitSuccess;
                 }
 
                 if (arg == "-i" && argc > argIndex + 1)
