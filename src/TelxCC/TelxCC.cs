@@ -36,234 +36,204 @@ namespace TelxCCSharp
 {
     public class TelxCC
     {
-        const string TELXCC_VERSION = "2.6.0";
+        const string TelxccVersion = "2.6.0";
 
-        private const int SIGINT = 2;
-        private const int SIGTERM = 15;
+        private const int ExitSuccess = 0;
+        private const int ExitFailure = 1;
 
-        private const int EXIT_SUCCESS = 0;
-        private const int EXIT_FAILURE = 1;
+        private const int SyncByte = 0x47;
 
-        private const int SYNC_BYTE = 0x47;
-
-        public enum bool_t
+        public enum BoolT
         {
-            NO = 0x00,
-            YES = 0x01,
-            UNDEF = 0xff
+            No = 0x00,
+            Yes = 0x01,
+            Undef = 0xff
         }
 
         // size of a (M2)TS packet in bytes (TS = 188, M2TS = 192)
-        private const int TS_PACKET_SIZE = 192;
+        private const int TsPacketSize = 192;
 
         // size of a TS packet payload in bytes
-        private const int TS_PACKET_PAYLOAD_SIZE = 184;
+        private const int TsPacketPayloadSize = 184;
 
         // size of a packet payload buffer
-        private const int PAYLOAD_BUFFER_SIZE = 4096;
+        private const int PayloadBufferSize = 4096;
 
-        public class ts_packet_t
+        public class TsPacket
         {
-            public int sync;
-            public int transport_error;
-            public int payload_unit_start;
-            public int transport_priority;
-            public int pid;
-            public int scrambling_control;
-            public int adaptation_field_exists;
-            public int continuity_counter;
+            public int Sync { get; set; }
+            public int TransportError { get; set; }
+            public int PayloadUnitStart { get; set; }
+            public int TransportPriority { get; set; }
+            public int Pid { get; set; }
+            public int ScramblingControl { get; set; }
+            public int AdaptationFieldExists { get; set; }
+            public int ContinuityCounter { get; set; }
         }
 
-        public class pat_section_t
+        public class PatSection
         {
-            public int program_num;
-            public int program_pid;
+            public int ProgramNum { get; set; }
+            public int ProgramPid { get; set; }
         }
 
-        public class pat_t
+        public class Pat
         {
-            public int pointer_field;
-            public int table_id;
-            public int section_length;
-            public int current_next_indicator;
+            public int PointerField { get; set; }
+            public int TableId { get; set; }
+            public int SectionLength { get; set; }
+            public int CurrentNextIndicator { get; set; }
         }
 
-        public class pmt_program_descriptor_t
+        public class PmtProgramDescriptor
         {
-            public int stream_type;
-            public int elementary_pid;
-            public int es_info_length;
+            public int StreamType { get; set; }
+            public int ElementaryPid { get; set; }
+            public int EsInfoLength { get; set; }
         }
 
-        public class pmt_t
+        public class Pmt
         {
-            public int pointer_field;
-            public int table_id;
-            public int section_length;
-            public int program_num;
-            public int current_next_indicator;
-            public int pcr_pid;
-            public int program_info_length;
+            public int PointerField { get; set; }
+            public int TableId { get; set; }
+            public int SectionLength { get; set; }
+            public int ProgramNum { get; set; }
+            public int CurrentNextIndicator { get; set; }
+            public int PcrPid { get; set; }
+            public int ProgramInfoLength { get; set; }
         }
 
-        public enum data_unit_t
+        public enum DataUnitT
         {
-            DATA_UNIT_EBU_TELETEXT_NONSUBTITLE = 0x02,
-            DATA_UNIT_EBU_TELETEXT_SUBTITLE = 0x03,
-            DATA_UNIT_EBU_TELETEXT_INVERTED = 0x0c,
-            DATA_UNIT_VPS = 0xc3,
-            DATA_UNIT_CLOSED_CAPTIONS = 0xc5
+            DataUnitEbuTeletextNonSubtitle = 0x02,
+            DataUnitEbuTeletextSubtitle = 0x03,
+            DataUnitEbuTeletextInverted = 0x0c,
+            DataUnitVps = 0xc3,
+            DataUnitClosedCaptions = 0xc5
         }
 
-        public enum transmission_mode_t
+        public enum TransmissionMode
         {
-            TRANSMISSION_MODE_PARALLEL = 0,
-            TRANSMISSION_MODE_SERIAL = 1
+            TransmissionModeParallel = 0,
+            TransmissionModeSerial = 1
         }
 
-        private static string[] TTXT_COLOURS = new string[8]
+        private static readonly string[] TtxtColours = 
         {
             //black,   red,       green,     yellow,    blue,      magenta,   cyan,      white
             "#000000", "#ff0000", "#00ff00", "#ffff00", "#0000ff", "#ff00ff", "#00ffff", "#ffffff"
         };
 
-        public class teletext_packet_payload_t
+        public class TeletextPacketPayload
         {
-            public int _clock_in; // clock run in
-            public int _framing_code; // framing code, not needed, ETSI 300 706: const 0xe4
-            public byte[] address = new byte[2];
-            public byte[] data = new byte[40];
+            public int ClockIn { get; }
+            public int FramingCode { get; }
+            public byte[] Address { get; } = new byte[2];
+            public byte[] Data { get; } = new byte[40];
 
-            public teletext_packet_payload_t(byte[] buffer, int index)
+            public TeletextPacketPayload(byte[] buffer, int index)
             {
-                _clock_in = buffer[index];
-                _framing_code = buffer[index + 1];
-                address[0] = buffer[index + 2];
-                address[1] = buffer[index + 3];
-                Buffer.BlockCopy(buffer, index + 4, data, 0, data.Length);
+                ClockIn = buffer[index];
+                FramingCode = buffer[index + 1];
+                Address[0] = buffer[index + 2];
+                Address[1] = buffer[index + 3];
+                Buffer.BlockCopy(buffer, index + 4, Data, 0, Data.Length);
             }
         }
 
-        public class teletext_page_t
+        public class TeletextPage
         {
-            public ulong show_timestamp; // show at timestamp (in ms)
-            public ulong hide_timestamp; // hide at timestamp (in ms)
-            public int[,] text = new int[25, 40]; // 25 lines x 40 cols (1 screen/page) of wide chars
-            public int tainted; // 1 = text variable contains any data
-        }
-
-        public class frame_t
-        {
-            public ulong show_timestamp; // show at timestamp (in ms)
-            public ulong hide_timestamp; // hide at timestamp (in ms)
-            public string text;
+            public ulong ShowTimestamp { get; set; }
+            public ulong HideTimestamp { get; set; }
+            public int[,] Text { get; set; } = new int[25, 40];
+            public bool Tainted { get; set; }
         }
 
         // application config global variable
         public class Config
         {
-            public string input_name; // input file name
-            public string output_name; // output file name
-            public bool verbose; // should telxcc be verbose?
-            public int page; // teletext page containing cc we want to filter
-            public int tid; // 13-bit packet ID for teletext stream
-            public double offset; // time offset in seconds
-            public bool colours; // output <font...></font> tags
-            public bool bom; // print UTF-8 BOM characters at the beginning of output
-            public bool nonempty; // produce at least one (dummy) frame
-            public ulong utc_refvalue; // UTC referential value
-
-            public bool se_mode; // FIXME: move SE_MODE to output module
-
-            //char *template; // output format template
-            public bool m2ts; // consider input stream is af s M2TS, instead of TS
+            public string InputName { get; set; }
+            public string OutputName { get; set; }
+            public bool Verbose { get; set; } // should telxcc be verbose?
+            public int Page { get; set; } // teletext page containing cc we want to filter
+            public int Tid { get; set; } // 13-bit packet ID for teletext stream
+            public double Offset { get; set; } // time offset in seconds
+            public bool Colours { get; set; } // output <font...></font> tags
+            public bool Bom { get; set; } // print UTF-8 BOM characters at the beginning of output
+            public bool NonEmpty { get; set; } // produce at least one (dummy) frame
+            public ulong UtcRefValue { get; set; } // UTC referential value
+            public bool SeMode { get; set; } // FIXME: move SE_MODE to output module
+            public bool M2Ts { get; set; } // consider input stream is af s M2TS, instead of TS
 
             public Config()
             {
-                input_name = null;
-                output_name = null;
-                verbose = false;
-                page = 0;
-                tid = 0;
-                offset = 0;
-                colours = false;
-                bom = true;
-                nonempty = false;
-                utc_refvalue = 0;
-                se_mode = false;
-                //.template = NULL,
-                m2ts = false;
+                InputName = null;
+                OutputName = null;
+                Verbose = false;
+                Page = 0;
+                Tid = 0;
+                Offset = 0;
+                Colours = false;
+                Bom = true;
+                NonEmpty = false;
+                UtcRefValue = 0;
+                SeMode = false;
+                M2Ts = false;
             }
         }
 
         private static readonly Config config = new Config();
 
-        /*
-        formatting template:
-            %f -- from timestamp (absolute, UTC)
-            %t -- to timestamp (absolute, UTC)
-            %F -- from time (SRT)
-            %T -- to time (SRT)
-            %g -- from timestamp (relative)
-            %u -- to timestamp (relative)
-            %c -- counter 0-based
-            %C -- counter 1-based
-            %s -- subtitles
-            %l -- subtitles (lines)
-            %p -- page number
-            %i -- stream ID
-        */
-
-        private static Stream fin;
-        private static StringBuilder fout = new StringBuilder();
+        private static Stream _fin;
+        private static readonly StringBuilder Fout = new StringBuilder();
 
         // application states -- flags for notices that should be printed only once
         public class States
         {
-            public bool programme_info_processed;
-            public bool pts_initialized;
+            public bool ProgrammeInfoProcessed { get; set; }
+            public bool PtsInitialized { get; set; }
         }
-        private static States states = new States();
+        private static readonly States states = new States();
 
         // SRT frames produced
-        private static int frames_produced;
+        private static int _framesProduced;
 
         // subtitle type pages bitmap, 2048 bits = 2048 possible pages in teletext (excl. subpages)
-        private static byte[] cc_map = new byte[256];
+        private static readonly byte[] CcMap = new byte[256];
 
         // global TS PCR value
-        private static ulong global_timestamp;
+        private static ulong _globalTimestamp;
 
         // last timestamp computed
-        private static ulong last_timestamp;
+        private static ulong _lastTimestamp;
 
         // working teletext page buffer
-        private static teletext_page_t page_buffer = new teletext_page_t();
+        private static readonly TeletextPage PageBuffer = new TeletextPage();
 
         // teletext transmission mode
-        private static transmission_mode_t transmission_mode = transmission_mode_t.TRANSMISSION_MODE_SERIAL;
+        private static TransmissionMode _transmissionMode = TransmissionMode.TransmissionModeSerial;
 
         // flag indicating if incoming data should be processed or ignored
-        private static bool receiving_data;
+        private static bool _receivingData;
 
         // current charset (charset can be -- and always is -- changed during transmission)
         public class PrimaryCharset
         {
-            public int current;
-            public int g0_m29;
-            public int g0_x28;
+            public int Current { get; set; }
+            public int G0M29 { get; set; }
+            public int G0X28 { get; set; }
 
             public PrimaryCharset()
             {
-                current = 0x00;
-                g0_m29 = (int)bool_t.UNDEF;
-                g0_x28 = (int)bool_t.UNDEF;
+                Current = 0x00;
+                G0M29 = (int)BoolT.Undef;
+                G0X28 = (int)BoolT.Undef;
             }
         }
         private static readonly PrimaryCharset primaryCharset = new PrimaryCharset();
 
         // entities, used in colour mode, to replace unsafe HTML tag chars
-        private static readonly Dictionary<char, string> Entities = new Dictionary<char, string>()
+        private static readonly Dictionary<char, string> Entities = new Dictionary<char, string>
         {
             { '<', "&lt;" },
             { '>', "&gt;" },
@@ -271,50 +241,48 @@ namespace TelxCCSharp
         };
 
         // PMTs table
-        private const int TS_PMT_MAP_SIZE = 128;
-        private static int[] pmt_map = new int[TS_PMT_MAP_SIZE];
-        private static int pmt_map_count;
+        private const int TsPmtMapSize = 128;
+        private static readonly int[] PmtMap = new int[TsPmtMapSize];
+        private static int _pmtMapCount;
 
         // TTXT streams table
-        private const int TS_PMT_TTXT_MAP_SIZE = 128;
-        private static int[] pmt_ttxt_map = new int[TS_PMT_MAP_SIZE];
-        private static int pmt_ttxt_map_count;
+        private const int TsPmtTtxtMapSize = 128;
+        private static readonly int[] PmtTtxtMap = new int[TsPmtMapSize];
+        private static int _pmtTtxtMapCount;
 
         // helper, linear searcher for a value
-        private static bool_t in_array(int[] array, int length, int element)
+        private static bool InArray(int[] array, int length, int element)
         {
-            bool_t r = bool_t.NO;
             for (var i = 0; i < length; i++)
             {
                 if (array[i] == element)
                 {
-                    r = bool_t.YES;
-                    break;
+                    return true;
                 }
             }
-            return r;
+            return false;
         }
 
         // extracts magazine number from teletext page
-        private static int MAGAZINE(int p)
+        private static int Magazine(int p)
         {
             return (p >> 8) & 0xf;
         }
 
         // extracts page number from teletext page
-        private static int PAGE(int p)
+        private static int Page(int p)
         {
             return p & 0xff;
         }
 
         // ETS 300 706, chapter 8.2
-        private static byte unham_8_4(byte a)
+        private static byte Unham84(byte a)
         {
             var r = Hamming.Unham84[a];
             if (r == 0xff)
             {
                 r = 0;
-                if (config.verbose)
+                if (config.Verbose)
                 {
                     Console.WriteLine($"! Unrecoverable data error; UNHAM8/4({a:X2})");
                 }
@@ -323,7 +291,7 @@ namespace TelxCCSharp
         }
 
         // ETS 300 706, chapter 8.3
-        private static uint unham_24_18(int a)
+        private static uint Unham2418(int a)
         {
             int test = 0;
 
@@ -348,25 +316,25 @@ namespace TelxCCSharp
             return (uint)result;
         }
 
-        private static void remap_g0_charset(int c)
+        private static void RemapG0Charset(int c)
         {
-            if (c != primaryCharset.current)
+            if (c != primaryCharset.Current)
             {
-                var m = Tables.G0_LATIN_NATIONAL_SUBSETS_MAP[c];
+                var m = Tables.G0LatinNationalSubsetsMap[c];
                 if (m == 0xff)
                 {
                     Console.WriteLine($"- G0 Latin National Subset ID {(c >> 3):X2}.{(c & 0x7):X2} is not implemented");
                 }
                 else
                 {
-                    for (int j = 0; j < 13; j++) Tables.G0[(int)Tables.g0_charsets_t.LATIN, Tables.G0_LATIN_NATIONAL_SUBSETS_POSITIONS[j]] = Tables.G0_LATIN_NATIONAL_SUBSETS[m].Characters[j];
-                    if (config.verbose) Console.WriteLine($"- Using G0 Latin National Subset ID {(c >> 3):X2}.{(c & 0x7):X2} ({Tables.G0_LATIN_NATIONAL_SUBSETS[m].Language})");
-                    primaryCharset.current = c;
+                    for (int j = 0; j < 13; j++) Tables.G0[(int)Tables.G0CharsetsT.Latin, Tables.G0LatinNationalSubsetsPositions[j]] = Tables.G0LatinNationalSubsets[m].Characters[j];
+                    if (config.Verbose) Console.WriteLine($"- Using G0 Latin National Subset ID {c >> 3:X2}.{c & 0x7:X2} ({Tables.G0LatinNationalSubsets[m].Language})");
+                    primaryCharset.Current = c;
                 }
             }
         }
 
-        private static string timestamp_to_srttime(ulong timestamp)
+        private static string TimestampToSrtTime(ulong timestamp)
         {
             var p = timestamp;
             var h = p / 3600000;
@@ -377,7 +345,7 @@ namespace TelxCCSharp
         }
 
         // UCS-2 (16 bits) to UTF-8 (Unicode Normalization Form C (NFC)) conversion
-        private static string ucs2_to_utf8(int ch)
+        private static string Ucs2ToUtf8(int ch)
         {
             var r = new byte[4];
             if (ch < 0x80)
@@ -400,21 +368,21 @@ namespace TelxCCSharp
         }
 
         // check parity and translate any reasonable teletext character into ucs2
-        private static int telx_to_ucs2(byte c)
+        private static int TelxToUcs2(byte c)
         {
             if (Hamming.Parity8[c] == 0)
             {
-                if (config.verbose) Console.WriteLine($"! Unrecoverable data error; PARITY({c:X2})");
+                if (config.Verbose) Console.WriteLine($"! Unrecoverable data error; PARITY({c:X2})");
                 return 0x20;
             }
 
             var r = c & 0x7f;
-            if (r >= 0x20) r = Tables.G0[(int)Tables.g0_charsets_t.LATIN, r - 0x20];
+            if (r >= 0x20) r = Tables.G0[(int)Tables.G0CharsetsT.Latin, r - 0x20];
             return r;
         }
 
         // FIXME: implement output modules (to support different formats, printf formatting etc)
-        static void process_page(teletext_page_t page)
+        static void ProcessPage(TeletextPage page)
         {
             //#if DEBUG
             //            for (int row = 1; row < 25; row++)
@@ -427,111 +395,111 @@ namespace TelxCCSharp
             //#endif
 
             // optimization: slicing column by column -- higher probability we could find boxed area start mark sooner
-            bool page_is_empty = true;
+            bool pageIsEmpty = true;
             for (var col = 0; col < 40; col++)
             {
                 for (var row = 1; row < 25; row++)
                 {
-                    if (page.text[row, col] == 0x0b)
+                    if (page.Text[row, col] == 0x0b)
                     {
-                        page_is_empty = false;
+                        pageIsEmpty = false;
                         goto page_is_empty;
                     }
                 }
             }
             page_is_empty:
-            if (page_is_empty) return;
+            if (pageIsEmpty) return;
 
-            if (page.show_timestamp > page.hide_timestamp) page.hide_timestamp = page.show_timestamp;
+            if (page.ShowTimestamp > page.HideTimestamp) page.HideTimestamp = page.ShowTimestamp;
 
-            if (config.se_mode)
+            if (config.SeMode)
             {
-                ++frames_produced;
-                fout.Append($"{(double)page.show_timestamp / 1000.0}|");
+                ++_framesProduced;
+                Fout.Append($"{(double)page.ShowTimestamp / 1000.0}|");
             }
             else
             {
-                var timeCodeShow = timestamp_to_srttime(page.show_timestamp);
-                var timeCodeHide = timestamp_to_srttime(page.hide_timestamp);
-                fout.AppendLine($"{++frames_produced}{Environment.NewLine}{timeCodeShow} --> {timeCodeHide}");
+                var timeCodeShow = TimestampToSrtTime(page.ShowTimestamp);
+                var timeCodeHide = TimestampToSrtTime(page.HideTimestamp);
+                Fout.AppendLine($"{++_framesProduced}{Environment.NewLine}{timeCodeShow} --> {timeCodeHide}");
             }
 
             // process data
             for (var row = 1; row < 25; row++)
             {
                 // anchors for string trimming purpose
-                var col_start = 40;
-                var col_stop = 40;
+                var colStart = 40;
+                var colStop = 40;
 
                 for (var col = 39; col >= 0; col--)
                 {
-                    if (page.text[row, col] == 0xb)
+                    if (page.Text[row, col] == 0xb)
                     {
-                        col_start = col;
+                        colStart = col;
                         break;
                     }
                 }
                 // line is empty
-                if (col_start > 39) continue;
+                if (colStart > 39) continue;
 
-                for (var col = col_start + 1; col <= 39; col++)
+                for (var col = colStart + 1; col <= 39; col++)
                 {
-                    if (page.text[row, col] > 0x20)
+                    if (page.Text[row, col] > 0x20)
                     {
-                        if (col_stop > 39) col_start = col;
-                        col_stop = col;
+                        if (colStop > 39) colStart = col;
+                        colStop = col;
                     }
-                    if (page.text[row, col] == 0xa) break;
+                    if (page.Text[row, col] == 0xa) break;
                 }
                 // line is empty
-                if (col_stop > 39) continue;
+                if (colStop > 39) continue;
 
                 // ETS 300 706, chapter 12.2: Alpha White ("Set-After") - Start-of-row default condition.
                 // used for colour changes _before_ start box mark
                 // white is default as stated in ETS 300 706, chapter 12.2
                 // black(0), red(1), green(2), yellow(3), blue(4), magenta(5), cyan(6), white(7)
-                var foreground_color = 0x7;
-                bool font_tag_opened = false;
+                var foregroundColor = 0x7;
+                bool fontTagOpened = false;
 
-                for (var col = 0; col <= col_stop; col++)
+                for (var col = 0; col <= colStop; col++)
                 {
                     // v is just a shortcut
-                    var v = page.text[row, col];
+                    var v = page.Text[row, col];
 
-                    if (col < col_start)
+                    if (col < colStart)
                     {
-                        if (v <= 0x7) foreground_color = v;
+                        if (v <= 0x7) foregroundColor = v;
                     }
 
-                    if (col == col_start)
+                    if (col == colStart)
                     {
-                        if ((foreground_color != 0x7) && (config.colours))
+                        if ((foregroundColor != 0x7) && (config.Colours))
                         {
-                            fout.Append($"<font color=\"{TTXT_COLOURS[foreground_color]}\">");
-                            font_tag_opened = true;
+                            Fout.Append($"<font color=\"{TtxtColours[foregroundColor]}\">");
+                            fontTagOpened = true;
                         }
                     }
 
-                    if (col >= col_start)
+                    if (col >= colStart)
                     {
                         if (v <= 0x7)
                         {
                             // ETS 300 706, chapter 12.2: Unless operating in "Hold Mosaics" mode,
                             // each character space occupied by a spacing attribute is displayed as a SPACE.
-                            if (config.colours)
+                            if (config.Colours)
                             {
-                                if (font_tag_opened)
+                                if (fontTagOpened)
                                 {
-                                    fout.Append("</font> ");
-                                    font_tag_opened = false;
+                                    Fout.Append("</font> ");
+                                    fontTagOpened = false;
                                 }
 
                                 // black is considered as white for telxcc purpose
                                 // telxcc writes <font/> tags only when needed
-                                if ((v > 0x0) && (v < 0x7))
+                                if (v > 0x0 && v < 0x7)
                                 {
-                                    fout.Append($"<font color=\"{TTXT_COLOURS[v]}\">");
-                                    font_tag_opened = true;
+                                    Fout.Append($"<font color=\"{TtxtColours[v]}\">");
+                                    fontTagOpened = true;
                                 }
                             }
                             else v = 0x20;
@@ -540,11 +508,11 @@ namespace TelxCCSharp
                         if (v >= 0x20)
                         {
                             // translate some chars into entities, if in colour mode
-                            if (config.colours)
+                            if (config.Colours)
                             {
                                 if (Entities.ContainsKey(Convert.ToChar(v)))
                                 {
-                                    fout.Append(Entities[Convert.ToChar(v)]);
+                                    Fout.Append(Entities[Convert.ToChar(v)]);
                                     // v < 0x20 won't be printed in next block
                                     v = 0;
                                     break;
@@ -554,49 +522,49 @@ namespace TelxCCSharp
 
                         if (v >= 0x20)
                         {
-                            fout.Append(ucs2_to_utf8(v));
+                            Fout.Append(Ucs2ToUtf8(v));
                         }
                     }
                 }
 
                 // no tag will left opened!
-                if ((config.colours) && (font_tag_opened))
+                if ((config.Colours) && (fontTagOpened))
                 {
-                    fout.Append("</font>");
-                    font_tag_opened = false;
+                    Fout.Append("</font>");
+                    fontTagOpened = false;
                 }
 
                 // line delimiter
-                fout.Append((config.se_mode) ? " " : Environment.NewLine);
+                Fout.Append(config.SeMode ? " " : Environment.NewLine);
             }
-            fout.AppendLine();
+            Fout.AppendLine();
         }
 
-        private static void process_telx_packet(data_unit_t data_unit_id, teletext_packet_payload_t packet, ulong timestamp)
+        private static void ProcessTelxPacket(DataUnitT dataUnitId, TeletextPacketPayload packet, ulong timestamp)
         {
             // variable names conform to ETS 300 706, chapter 7.1.2
-            var address = (unham_8_4(packet.address[1]) << 4) | unham_8_4(packet.address[0]);
+            var address = (Unham84(packet.Address[1]) << 4) | Unham84(packet.Address[0]);
             var m = address & 0x7;
             if (m == 0) m = 8;
             var y = (address >> 3) & 0x1f;
-            var designation_code = (y > 25) ? unham_8_4(packet.data[0]) : 0x00;
+            var designationCode = y > 25 ? Unham84(packet.Data[0]) : 0x00;
 
             if (y == 0)
             {
                 // CC map
-                var i = (unham_8_4(packet.data[1]) << 4) | unham_8_4(packet.data[0]);
-                var flag_subtitle = (unham_8_4(packet.data[5]) & 0x08) >> 3;
-                cc_map[i] |= (byte)(flag_subtitle << (m - 1));
+                var i = (Unham84(packet.Data[1]) << 4) | Unham84(packet.Data[0]);
+                var flagSubtitle = (Unham84(packet.Data[5]) & 0x08) >> 3;
+                CcMap[i] |= (byte)(flagSubtitle << (m - 1));
 
-                if (config.page == 0 && flag_subtitle == (int)bool_t.YES && i < 0xff)
+                if (config.Page == 0 && flagSubtitle == (int)BoolT.Yes && i < 0xff)
                 {
-                    config.page = (m << 8) | (unham_8_4(packet.data[1]) << 4) | unham_8_4(packet.data[0]);
-                    Console.WriteLine($"- No teletext page specified, first received suitable page is {config.page}, not guaranteed");
+                    config.Page = (m << 8) | (Unham84(packet.Data[1]) << 4) | Unham84(packet.Data[0]);
+                    Console.WriteLine($"- No teletext page specified, first received suitable page is {config.Page}, not guaranteed");
                 }
 
                 // Page number and control bits
-                var page_number = (m << 8) | (unham_8_4(packet.data[1]) << 4) | unham_8_4(packet.data[0]);
-                var charset = ((unham_8_4(packet.data[7]) & 0x08) | (unham_8_4(packet.data[7]) & 0x04) | (unham_8_4(packet.data[7]) & 0x02)) >> 1;
+                var pageNumber = (m << 8) | (Unham84(packet.Data[1]) << 4) | Unham84(packet.Data[0]);
+                var charset = ((Unham84(packet.Data[7]) & 0x08) | (Unham84(packet.Data[7]) & 0x04) | (Unham84(packet.Data[7]) & 0x02)) >> 1;
                 //uint8_t flag_suppress_header = unham_8_4(packet.data[6]) & 0x01;
                 //uint8_t flag_inhibit_display = (unham_8_4(packet.data[6]) & 0x08) >> 3;
 
@@ -608,40 +576,40 @@ namespace TelxCCSharp
                 // The same setting shall be used for all page headers in the service.
                 // ETS 300 706, chapter 7.2.1: Page is terminated by and excludes the next page header packet
                 // having the same magazine address in parallel transmission mode, or any magazine address in serial transmission mode.
-                transmission_mode = (transmission_mode_t)(unham_8_4(packet.data[7]) & 0x01);
+                _transmissionMode = (TransmissionMode)(Unham84(packet.Data[7]) & 0x01);
 
                 // FIXME: Well, this is not ETS 300 706 kosher, however we are interested in DATA_UNIT_EBU_TELETEXT_SUBTITLE only
-                if ((transmission_mode == transmission_mode_t.TRANSMISSION_MODE_PARALLEL) && (data_unit_id != data_unit_t.DATA_UNIT_EBU_TELETEXT_SUBTITLE)) return;
+                if (_transmissionMode == TransmissionMode.TransmissionModeParallel && (dataUnitId != DataUnitT.DataUnitEbuTeletextSubtitle)) return;
 
-                if ((receiving_data) && (
-                        ((transmission_mode == transmission_mode_t.TRANSMISSION_MODE_SERIAL) && (PAGE(page_number) != PAGE(config.page))) ||
-                        ((transmission_mode == transmission_mode_t.TRANSMISSION_MODE_PARALLEL) && (PAGE(page_number) != PAGE(config.page)) && (m == MAGAZINE(config.page)))
+                if (_receivingData && (
+                        _transmissionMode == TransmissionMode.TransmissionModeSerial && (Page(pageNumber) != Page(config.Page)) ||
+                        _transmissionMode == TransmissionMode.TransmissionModeParallel && (Page(pageNumber) != Page(config.Page)) && (m == Magazine(config.Page))
                     ))
                 {
-                    receiving_data = false;
+                    _receivingData = false;
                     return;
                 }
 
                 // Page transmission is terminated, however now we are waiting for our new page
-                if (page_number != config.page) return;
+                if (pageNumber != config.Page) return;
 
                 // Now we have the beginning of page transmission; if there is page_buffer pending, process it
-                if (page_buffer.tainted == (int)bool_t.YES)
+                if (PageBuffer.Tainted)
                 {
                     // it would be nice, if subtitle hides on previous video frame, so we contract 40 ms (1 frame @25 fps)
-                    page_buffer.hide_timestamp = timestamp - 40;
-                    process_page(page_buffer);
+                    PageBuffer.HideTimestamp = timestamp - 40;
+                    ProcessPage(PageBuffer);
                 }
 
-                page_buffer.show_timestamp = timestamp;
-                page_buffer.hide_timestamp = 0;
-                page_buffer.text = new int[25, 40]; //memset(page_buffer.text, 0x00, sizeof(page_buffer.text));
-                page_buffer.tainted = (int)bool_t.NO;
-                receiving_data = true;
-                primaryCharset.g0_x28 = (int)bool_t.UNDEF;
+                PageBuffer.ShowTimestamp = timestamp;
+                PageBuffer.HideTimestamp = 0;
+                PageBuffer.Text = new int[25, 40]; //memset(page_buffer.text, 0x00, sizeof(page_buffer.text));
+                PageBuffer.Tainted = false;
+                _receivingData = true;
+                primaryCharset.G0X28 = (int)BoolT.Undef;
 
-                var c = (primaryCharset.g0_m29 != (int)bool_t.UNDEF) ? primaryCharset.g0_m29 : charset;
-                remap_g0_charset(c);
+                var c = primaryCharset.G0M29 != (int)BoolT.Undef ? primaryCharset.G0M29 : charset;
+                RemapG0Charset(c);
 
                 /*
                 // I know -- not needed; in subtitles we will never need disturbing teletext page status bar
@@ -652,114 +620,114 @@ namespace TelxCCSharp
                 }
                 */
             }
-            else if ((m == MAGAZINE(config.page)) && (y >= 1) && (y <= 23) && (receiving_data))
+            else if (m == Magazine(config.Page) && y >= 1 && y <= 23 && _receivingData)
             {
                 // ETS 300 706, chapter 9.4.1: Packets X/26 at presentation Levels 1.5, 2.5, 3.5 are used for addressing
                 // a character location and overwriting the existing character defined on the Level 1 page
                 // ETS 300 706, annex B.2.2: Packets with Y = 26 shall be transmitted before any packets with Y = 1 to Y = 25;
                 // so page_buffer.text[y,i] may already contain any character received
                 // in frame number 26, skip original G0 character
-                for (var i = 0; i < 40; i++) if (page_buffer.text[y, i] == 0x00) page_buffer.text[y, i] = telx_to_ucs2(packet.data[i]);
-                page_buffer.tainted = (int)bool_t.YES;
+                for (var i = 0; i < 40; i++) if (PageBuffer.Text[y, i] == 0x00) PageBuffer.Text[y, i] = TelxToUcs2(packet.Data[i]);
+                PageBuffer.Tainted = true;
             }
-            else if ((m == MAGAZINE(config.page)) && (y == 26) && (receiving_data))
+            else if (m == Magazine(config.Page) && y == 26 && _receivingData)
             {
                 // ETS 300 706, chapter 12.3.2: X/26 definition
-                var x26_row = 0;
-                var x26_col = 0;
+                var x26Row = 0;
+                var x26Col = 0;
 
                 var triplets = new uint[13];
                 var j = 0;
-                for (var i = 1; i < 40; i += 3, j++) triplets[j] = unham_24_18((packet.data[i + 2] << 16) | (packet.data[i + 1] << 8) | packet.data[i]);
+                for (var i = 1; i < 40; i += 3, j++) triplets[j] = Unham2418((packet.Data[i + 2] << 16) | (packet.Data[i + 1] << 8) | packet.Data[i]);
 
                 for (var j2 = 0; j2 < 13; j2++)
                 {
                     if (triplets[j2] == 0xffffffff)
                     {
                         // invalid data (HAM24/18 uncorrectable error detected), skip group
-                        if (config.verbose) Console.WriteLine($"! Unrecoverable data error; UNHAM24/18()={triplets[j2]}");
+                        if (config.Verbose) Console.WriteLine($"! Unrecoverable data error; UNHAM24/18()={triplets[j2]}");
                         continue;
                     }
 
                     var data = (triplets[j2] & 0x3f800) >> 11;
                     var mode = (triplets[j2] & 0x7c0) >> 6;
                     var address2 = triplets[j2] & 0x3f;
-                    var row_address_group = (address2 >= 40) && (address2 <= 63);
+                    var rowAddressGroup = (address2 >= 40) && (address2 <= 63);
 
                     // ETS 300 706, chapter 12.3.1, table 27: set active position
-                    if ((mode == 0x04) && (row_address_group))
+                    if (mode == 0x04 && rowAddressGroup)
                     {
-                        x26_row = (int)(address2 - 40);
-                        if (x26_row == 0) x26_row = 24;
-                        x26_col = 0;
+                        x26Row = (int)(address2 - 40);
+                        if (x26Row == 0) x26Row = 24;
+                        x26Col = 0;
                     }
 
                     // ETS 300 706, chapter 12.3.1, table 27: termination marker
-                    if ((mode >= 0x11) && (mode <= 0x1f) && (row_address_group)) break;
+                    if (mode >= 0x11 && mode <= 0x1f && rowAddressGroup) break;
 
                     // ETS 300 706, chapter 12.3.1, table 27: character from G2 set
-                    if ((mode == 0x0f) && (!row_address_group))
+                    if (mode == 0x0f && !rowAddressGroup)
                     {
-                        x26_col = (int)address2;
-                        if (data > 31) page_buffer.text[x26_row, x26_col] = Tables.G2[0, data - 0x20];
+                        x26Col = (int)address2;
+                        if (data > 31) PageBuffer.Text[x26Row, x26Col] = Tables.G2[0, data - 0x20];
                     }
 
                     // ETS 300 706, chapter 12.3.1, table 27: G0 character with diacritical mark
-                    if ((mode >= 0x11) && (mode <= 0x1f) && (!row_address_group))
+                    if (mode >= 0x11 && mode <= 0x1f && !rowAddressGroup)
                     {
-                        x26_col = (int)address2;
+                        x26Col = (int)address2;
 
                         // A - Z
-                        if ((data >= 65) && (data <= 90)) page_buffer.text[x26_row, x26_col] = Tables.G2_ACCENTS[mode - 0x11, data - 65];
+                        if (data >= 65 && data <= 90) PageBuffer.Text[x26Row, x26Col] = Tables.G2Accents[mode - 0x11, data - 65];
                         // a - z
-                        else if ((data >= 97) && (data <= 122)) page_buffer.text[x26_row, x26_col] = Tables.G2_ACCENTS[mode - 0x11, data - 71];
+                        else if (data >= 97 && data <= 122) PageBuffer.Text[x26Row, x26Col] = Tables.G2Accents[mode - 0x11, data - 71];
                         // other
-                        else page_buffer.text[x26_row, x26_col] = telx_to_ucs2((byte)data);
+                        else PageBuffer.Text[x26Row, x26Col] = TelxToUcs2((byte)data);
                     }
                 }
             }
-            else if ((m == MAGAZINE(config.page)) && (y == 28) && (receiving_data))
+            else if (m == Magazine(config.Page) && y == 28 && _receivingData)
             {
                 // TODO:
                 //   ETS 300 706, chapter 9.4.7: Packet X/28/4
                 //   Where packets 28/0 and 28/4 are both transmitted as part of a page, packet 28/0 takes precedence over 28/4 for all but the colour map entry coding.
-                if ((designation_code == 0) || (designation_code == 4))
+                if (designationCode == 0 || designationCode == 4)
                 {
                     // ETS 300 706, chapter 9.4.2: Packet X/28/0 Format 1
                     // ETS 300 706, chapter 9.4.7: Packet X/28/4
-                    uint triplet0 = unham_24_18((packet.data[3] << 16) | (packet.data[2] << 8) | packet.data[1]);
+                    uint triplet0 = Unham2418((packet.Data[3] << 16) | (packet.Data[2] << 8) | packet.Data[1]);
 
                     if (triplet0 == 0xffffffff)
                     {
                         // invalid data (HAM24/18 uncorrectable error detected), skip group
-                        if (config.verbose) Console.WriteLine($"! Unrecoverable data error; UNHAM24/18()={triplet0}");
+                        if (config.Verbose) Console.WriteLine($"! Unrecoverable data error; UNHAM24/18()={triplet0}");
                     }
                     else
                     {
                         // ETS 300 706, chapter 9.4.2: Packet X/28/0 Format 1 only
                         if ((triplet0 & 0x0f) == 0x00)
                         {
-                            primaryCharset.g0_x28 = (int)((triplet0 & 0x3f80) >> 7);
-                            remap_g0_charset(primaryCharset.g0_x28);
+                            primaryCharset.G0X28 = (int)((triplet0 & 0x3f80) >> 7);
+                            RemapG0Charset(primaryCharset.G0X28);
                         }
                     }
                 }
             }
-            else if ((m == MAGAZINE(config.page)) && (y == 29))
+            else if (m == Magazine(config.Page) && y == 29)
             {
                 // TODO:
                 //   ETS 300 706, chapter 9.5.1 Packet M/29/0
                 //   Where M/29/0 and M/29/4 are transmitted for the same magazine, M/29/0 takes precedence over M/29/4.
-                if ((designation_code == 0) || (designation_code == 4))
+                if (designationCode == 0 || designationCode == 4)
                 {
                     // ETS 300 706, chapter 9.5.1: Packet M/29/0
                     // ETS 300 706, chapter 9.5.3: Packet M/29/4
-                    uint triplet0 = unham_24_18((packet.data[3] << 16) | (packet.data[2] << 8) | packet.data[1]);
+                    uint triplet0 = Unham2418((packet.Data[3] << 16) | (packet.Data[2] << 8) | packet.Data[1]);
 
                     if (triplet0 == 0xffffffff)
                     {
                         // invalid data (HAM24/18 uncorrectable error detected), skip group
-                        if (config.verbose) Console.WriteLine($"! Unrecoverable data error; UNHAM24/18()={triplet0}");
+                        if (config.Verbose) Console.WriteLine($"! Unrecoverable data error; UNHAM24/18()={triplet0}");
                     }
                     else
                     {
@@ -767,32 +735,32 @@ namespace TelxCCSharp
                         // ETS 300 706, table 13: Coding of Packet M/29/4
                         if ((triplet0 & 0xff) == 0x00)
                         {
-                            primaryCharset.g0_m29 = (int)((triplet0 & 0x3f80) >> 7);
+                            primaryCharset.G0M29 = (int)((triplet0 & 0x3f80) >> 7);
                             // X/28 takes precedence over M/29
-                            if (primaryCharset.g0_x28 == (int)bool_t.UNDEF)
+                            if (primaryCharset.G0X28 == (int)BoolT.Undef)
                             {
-                                remap_g0_charset(primaryCharset.g0_m29);
+                                RemapG0Charset(primaryCharset.G0M29);
                             }
                         }
                     }
                 }
             }
-            else if ((m == 8) && (y == 30))
+            else if (m == 8 && y == 30)
             {
                 // ETS 300 706, chapter 9.8: Broadcast Service Data Packets
-                if (!states.programme_info_processed)
+                if (!states.ProgrammeInfoProcessed)
                 {
                     // ETS 300 706, chapter 9.8.1: Packet 8/30 Format 1
-                    if (unham_8_4(packet.data[0]) < 2)
+                    if (Unham84(packet.Data[0]) < 2)
                     {
                         Console.Write("- Programme Identification Data = ");
                         for (var i = 20; i < 40; i++)
                         {
-                            var c = telx_to_ucs2(packet.data[i]);
+                            var c = TelxToUcs2(packet.Data[i]);
                             // strip any control codes from PID, eg. TVP station
                             if (c < 0x20) continue;
 
-                            Console.Write(ucs2_to_utf8(c));
+                            Console.Write(Ucs2ToUtf8(c));
                         }
                         Console.WriteLine();
 
@@ -801,98 +769,98 @@ namespace TelxCCSharp
                         // In addition all decimals are incremented by 1 before transmission.
                         long t = 0;
                         // 1st step: BCD to Modified Julian Day
-                        t += (packet.data[10] & 0x0f) * 10000;
-                        t += ((packet.data[11] & 0xf0) >> 4) * 1000;
-                        t += (packet.data[11] & 0x0f) * 100;
-                        t += ((packet.data[12] & 0xf0) >> 4) * 10;
-                        t += (packet.data[12] & 0x0f);
+                        t += (packet.Data[10] & 0x0f) * 10000;
+                        t += ((packet.Data[11] & 0xf0) >> 4) * 1000;
+                        t += (packet.Data[11] & 0x0f) * 100;
+                        t += ((packet.Data[12] & 0xf0) >> 4) * 10;
+                        t += (packet.Data[12] & 0x0f);
                         t -= 11111;
                         // 2nd step: conversion Modified Julian Day to unix timestamp
                         t = (t - 40587) * 86400;
                         // 3rd step: add time
-                        t += 3600 * (((packet.data[13] & 0xf0) >> 4) * 10 + (packet.data[13] & 0x0f));
-                        t += 60 * (((packet.data[14] & 0xf0) >> 4) * 10 + (packet.data[14] & 0x0f));
-                        t += (((packet.data[15] & 0xf0) >> 4) * 10 + (packet.data[15] & 0x0f));
+                        t += 3600 * (((packet.Data[13] & 0xf0) >> 4) * 10 + (packet.Data[13] & 0x0f));
+                        t += 60 * (((packet.Data[14] & 0xf0) >> 4) * 10 + (packet.Data[14] & 0x0f));
+                        t += (((packet.Data[15] & 0xf0) >> 4) * 10 + (packet.Data[15] & 0x0f));
                         t -= 40271;
                         // 4th step: conversion to time_t
                         var span = TimeSpan.FromTicks(t * TimeSpan.TicksPerSecond);
                         var t2 = new DateTime(1970, 1, 1).Add(span);
                         var localTime = TimeZone.CurrentTimeZone.ToLocalTime(t2); // TimeZone.CurrentTimeZone.ToUniversalTime(t2); ?
-                        
+
                         Console.WriteLine($"- Programme Timestamp (UTC) = {localTime.ToLongDateString()} {localTime.ToLongTimeString()}");
 
-                        if (config.verbose) Console.WriteLine($"- Transmission mode = {(transmission_mode == transmission_mode_t.TRANSMISSION_MODE_SERIAL ? "serial" : "parallel")}");
+                        if (config.Verbose) Console.WriteLine($"- Transmission mode = {(_transmissionMode == TransmissionMode.TransmissionModeSerial ? "serial" : "parallel")}");
 
-                        if (config.se_mode)
+                        if (config.SeMode)
                         {
                             Console.WriteLine($"- Broadcast Service Data Packet received, resetting UTC referential value to {t} seconds");
-                            config.utc_refvalue = (ulong)t;
-                            states.pts_initialized = false;
+                            config.UtcRefValue = (ulong)t;
+                            states.PtsInitialized = false;
                         }
 
-                        states.programme_info_processed = true;
+                        states.ProgrammeInfoProcessed = true;
                     }
                 }
             }
         }
 
-        static bool_t using_pts = bool_t.UNDEF;
-        static long delta = 0;
-        static long t0 = 0;
+        private static BoolT _usingPts = BoolT.Undef;
+        private static long _delta;
+        private static long _t0;
 
-        static void process_pes_packet(byte[] buffer, int size)
+        private static void ProcessPesPacket(byte[] buffer, int size)
         {
             if (size < 6) return;
 
             // Packetized Elementary Stream (PES) 32-bit start code
-            ulong pes_prefix = (ulong)((buffer[0] << 16) | (buffer[1] << 8) | buffer[2]);
-            var pes_stream_id = buffer[3];
+            ulong pesPrefix = (ulong)((buffer[0] << 16) | (buffer[1] << 8) | buffer[2]);
+            var pesStreamId = buffer[3];
 
             // check for PES header
-            if (pes_prefix != 0x000001) return;
+            if (pesPrefix != 0x000001) return;
 
             // stream_id is not "Private Stream 1" (0xbd)
-            if (pes_stream_id != 0xbd) return;
+            if (pesStreamId != 0xbd) return;
 
             // PES packet length
             // ETSI EN 301 775 V1.2.1 (2003-05) chapter 4.3: (N x 184) - 6 + 6 B header
-            var pes_packet_length = 6 + ((buffer[4] << 8) | buffer[5]);
+            var pesPacketLength = 6 + ((buffer[4] << 8) | buffer[5]);
             // Can be zero. If the "PES packet length" is set to zero, the PES packet can be of any length.
             // A value of zero for the PES packet length can be used only when the PES packet payload is a video elementary stream.
-            if (pes_packet_length == 6) return;
+            if (pesPacketLength == 6) return;
 
             // truncate incomplete PES packets
-            if (pes_packet_length > size) pes_packet_length = size;
+            if (pesPacketLength > size) pesPacketLength = size;
 
-            bool optional_pes_header_included = false;
-            var optional_pes_header_length = 0;
+            bool optionalPesHeaderIncluded = false;
+            var optionalPesHeaderLength = 0;
             // optional PES header marker bits (10.. ....)
             if ((buffer[6] & 0xc0) == 0x80)
             {
-                optional_pes_header_included = true;
-                optional_pes_header_length = buffer[8];
+                optionalPesHeaderIncluded = true;
+                optionalPesHeaderLength = buffer[8];
             }
 
             // should we use PTS or PCR?
-            if (using_pts == bool_t.UNDEF)
+            if (_usingPts == BoolT.Undef)
             {
-                if ((optional_pes_header_included) && ((buffer[7] & 0x80) > 0))
+                if (optionalPesHeaderIncluded && (buffer[7] & 0x80) > 0)
                 {
-                    using_pts = bool_t.YES;
-                    if (config.verbose) Console.WriteLine("- PID 0xbd PTS available");
+                    _usingPts = BoolT.Yes;
+                    if (config.Verbose) Console.WriteLine("- PID 0xbd PTS available");
                 }
                 else
                 {
-                    using_pts = bool_t.NO;
-                    if (config.verbose) Console.WriteLine(" - PID 0xbd PTS unavailable, using TS PCR");
+                    _usingPts = BoolT.No;
+                    if (config.Verbose) Console.WriteLine(" - PID 0xbd PTS unavailable, using TS PCR");
                 }
             }
 
-            ulong t = 0;
+            ulong t;
             // If there is no PTS available, use global PCR
-            if (using_pts == bool_t.NO)
+            if (_usingPts == BoolT.No)
             {
-                t = global_timestamp;
+                t = _globalTimestamp;
             }
             else
             {
@@ -900,90 +868,90 @@ namespace TelxCCSharp
                 // presentation and decoder timestamps use the 90 KHz clock, hence PTS/90 = [ms]
                 // __MUST__ assign value to uint64_t and __THEN__ rotate left by 29 bits
                 // << is defined for signed int (as in "C" spec.) and overflow occures
-                long pts = (buffer[9] & 0x0e);
+                long pts = buffer[9] & 0x0e;
                 pts <<= 29;
-                pts |= (buffer[10] << 22);
-                pts |= ((buffer[11] & 0xfe) << 14);
-                pts |= (buffer[12] << 7);
-                pts |= ((buffer[13] & 0xfe) >> 1);
+                pts |= buffer[10] << 22;
+                pts |= (buffer[11] & 0xfe) << 14;
+                pts |= buffer[12] << 7;
+                pts |= (buffer[13] & 0xfe) >> 1;
                 t = (ulong)pts / 90;
             }
 
-            if (!states.pts_initialized)
+            if (!states.PtsInitialized)
             {
-                delta = (long)(1000 * config.offset + 1000 * config.utc_refvalue - t);
-                states.pts_initialized = true;
+                _delta = (long)(1000 * config.Offset + 1000 * config.UtcRefValue - t);
+                states.PtsInitialized = true;
 
-                if ((using_pts == bool_t.NO) && (global_timestamp == 0))
+                if (_usingPts == BoolT.No && _globalTimestamp == 0)
                 {
                     // We are using global PCR, nevertheless we still have not received valid PCR timestamp yet
-                    states.pts_initialized = false;
+                    states.PtsInitialized = false;
                 }
             }
-            if (t < (ulong)t0) delta = (long)last_timestamp;
-            last_timestamp = t + (ulong)delta;
-            t0 = (long)t;
+            if (t < (ulong)_t0) _delta = (long)_lastTimestamp;
+            _lastTimestamp = t + (ulong)_delta;
+            _t0 = (long)t;
 
             // skip optional PES header and process each 46 bytes long teletext packet
             var i = 7;
-            if (optional_pes_header_included) i += 3 + optional_pes_header_length;
-            while (i <= pes_packet_length - 6)
+            if (optionalPesHeaderIncluded) i += 3 + optionalPesHeaderLength;
+            while (i <= pesPacketLength - 6)
             {
-                var data_unit_id = buffer[i++];
-                var data_unit_len = buffer[i++];
+                var dataUnitId = buffer[i++];
+                var dataUnitLen = buffer[i++];
 
-                if ((data_unit_id == (int)data_unit_t.DATA_UNIT_EBU_TELETEXT_NONSUBTITLE) || (data_unit_id == (int)data_unit_t.DATA_UNIT_EBU_TELETEXT_SUBTITLE))
+                if (dataUnitId == (int)DataUnitT.DataUnitEbuTeletextNonSubtitle || dataUnitId == (int)DataUnitT.DataUnitEbuTeletextSubtitle)
                 {
                     // teletext payload has always size 44 bytes
-                    if (data_unit_len == 44)
+                    if (dataUnitLen == 44)
                     {
                         // reverse endianess (via lookup table), ETS 300 706, chapter 7.1
-                        for (var j = 0; j < data_unit_len; j++) buffer[i + j] = Hamming.Reverse8[buffer[i + j]];
+                        for (var j = 0; j < dataUnitLen; j++) buffer[i + j] = Hamming.Reverse8[buffer[i + j]];
 
                         // FIXME: This explicit type conversion could be a problem some day -- do not need to be platform independant
-                        process_telx_packet((data_unit_t)data_unit_id, new teletext_packet_payload_t(buffer, i), last_timestamp);
+                        ProcessTelxPacket((DataUnitT)dataUnitId, new TeletextPacketPayload(buffer, i), _lastTimestamp);
                     }
                 }
 
-                i += data_unit_len;
+                i += dataUnitLen;
             }
         }
 
-        static void analyze_pat(byte[] buffer, int size)
+        static void AnalyzePat(byte[] buffer, int size)
         {
             if (size < 7) return;
 
-            var pat = new pat_t { pointer_field = buffer[0] };
+            var pat = new Pat { PointerField = buffer[0] };
 
             // FIXME
-            if (pat.pointer_field > 0)
+            if (pat.PointerField > 0)
             {
-                Console.WriteLine($"! pat.pointer_field > 0 ({pat.pointer_field})");
+                Console.WriteLine($"! pat.PointerField > 0 ({pat.PointerField})");
                 return;
             }
 
-            pat.table_id = buffer[1];
-            if (pat.table_id == 0x00)
+            pat.TableId = buffer[1];
+            if (pat.TableId == 0x00)
             {
-                pat.section_length = ((buffer[2] & 0x03) << 8) | buffer[3];
-                pat.current_next_indicator = buffer[6] & 0x01;
+                pat.SectionLength = ((buffer[2] & 0x03) << 8) | buffer[3];
+                pat.CurrentNextIndicator = buffer[6] & 0x01;
                 // already valid PAT
-                if (pat.current_next_indicator == 1)
+                if (pat.CurrentNextIndicator == 1)
                 {
                     var i = 9;
-                    while ((i < 9 + (pat.section_length - 5 - 4)) && (i < size))
+                    while (i < 9 + (pat.SectionLength - 5 - 4) && i < size)
                     {
-                        var section = new pat_section_t
+                        var section = new PatSection
                         {
-                            program_num = (buffer[i] << 8) | buffer[i + 1],
-                            program_pid = ((buffer[i + 2] & 0x1f) << 8) | buffer[i + 3]
+                            ProgramNum = (buffer[i] << 8) | buffer[i + 1],
+                            ProgramPid = ((buffer[i + 2] & 0x1f) << 8) | buffer[i + 3]
                         };
 
-                        if (in_array(pmt_map, pmt_map_count, section.program_pid) == bool_t.NO)
+                        if (!InArray(PmtMap, _pmtMapCount, section.ProgramPid))
                         {
-                            if (pmt_map_count < TS_PMT_MAP_SIZE)
+                            if (_pmtMapCount < TsPmtMapSize)
                             {
-                                pmt_map[pmt_map_count++] = section.program_pid;
+                                PmtMap[_pmtMapCount++] = section.ProgramPid;
                                 //#if DEBUG
                                 //                                Console.WriteLine($"# Found PMT for SID {section.program_num} ({section.program_num})");
                                 //#endif
@@ -995,73 +963,63 @@ namespace TelxCCSharp
             }
         }
 
-        static void analyze_pmt(byte[] buffer, int size)
+        static void AnalyzePmt(byte[] buffer, int size)
         {
             if (size < 7) return;
 
-            var pmt = new pmt_t { pointer_field = buffer[0] };
+            var pmt = new Pmt { PointerField = buffer[0] };
 
             // FIXME
-            if (pmt.pointer_field > 0)
+            if (pmt.PointerField > 0)
             {
-                Console.WriteLine($"! pmt.pointer_field > 0 ({pmt.pointer_field})");
+                Console.WriteLine($"! pmt.pointer_field > 0 ({pmt.PointerField})");
                 return;
             }
 
-            pmt.table_id = buffer[1];
-            if (pmt.table_id == 0x02)
+            pmt.TableId = buffer[1];
+            if (pmt.TableId == 0x02)
             {
-                pmt.section_length = ((buffer[2] & 0x03) << 8) | buffer[3];
-                pmt.program_num = (buffer[4] << 8) | buffer[5];
-                pmt.current_next_indicator = buffer[6] & 0x01;
-                pmt.pcr_pid = ((buffer[9] & 0x1f) << 8) | buffer[10];
-                pmt.program_info_length = ((buffer[11] & 0x03) << 8) | buffer[12];
+                pmt.SectionLength = ((buffer[2] & 0x03) << 8) | buffer[3];
+                pmt.ProgramNum = (buffer[4] << 8) | buffer[5];
+                pmt.CurrentNextIndicator = buffer[6] & 0x01;
+                pmt.PcrPid = ((buffer[9] & 0x1f) << 8) | buffer[10];
+                pmt.ProgramInfoLength = ((buffer[11] & 0x03) << 8) | buffer[12];
                 // already valid PMT
-                if (pmt.current_next_indicator == 1)
+                if (pmt.CurrentNextIndicator == 1)
                 {
-                    var i = 13 + pmt.program_info_length;
-                    while ((i < 13 + (pmt.program_info_length + pmt.section_length - 4 - 9)) && (i < size))
+                    var i = 13 + pmt.ProgramInfoLength;
+                    while (i < 13 + (pmt.ProgramInfoLength + pmt.SectionLength - 4 - 9) && i < size)
                     {
-                        var desc = new pmt_program_descriptor_t
+                        var desc = new PmtProgramDescriptor
                         {
-                            stream_type = buffer[i],
-                            elementary_pid = ((buffer[i + 1] & 0x1f) << 8) | buffer[i + 2],
-                            es_info_length = ((buffer[i + 3] & 0x03) << 8) | buffer[i + 4]
+                            StreamType = buffer[i],
+                            ElementaryPid = ((buffer[i + 1] & 0x1f) << 8) | buffer[i + 2],
+                            EsInfoLength = ((buffer[i + 3] & 0x03) << 8) | buffer[i + 4]
                         };
 
-                        var descriptor_tag = buffer[i + 5];
+                        var descriptorTag = buffer[i + 5];
                         // descriptor_tag: 0x45 = VBI_data_descriptor, 0x46 = VBI_teletext_descriptor, 0x56 = teletext_descriptor
-                        if ((desc.stream_type == 0x06) && ((descriptor_tag == 0x45) || (descriptor_tag == 0x46) || (descriptor_tag == 0x56)))
+                        if (desc.StreamType == 0x06 && (descriptorTag == 0x45 || descriptorTag == 0x46 || descriptorTag == 0x56))
                         {
-                            if (in_array(pmt_ttxt_map, pmt_ttxt_map_count, desc.elementary_pid) == bool_t.NO)
+                            if (!InArray(PmtTtxtMap, _pmtTtxtMapCount, desc.ElementaryPid))
                             {
-                                if (pmt_ttxt_map_count < TS_PMT_TTXT_MAP_SIZE)
+                                if (_pmtTtxtMapCount < TsPmtTtxtMapSize)
                                 {
-                                    pmt_ttxt_map[pmt_ttxt_map_count++] = desc.elementary_pid;
-                                    if (config.tid == 0) config.tid = desc.elementary_pid;
-                                    Console.WriteLine($"- Found VBI/teletext stream ID {desc.elementary_pid} ({desc.elementary_pid:X2}) for SID {pmt.program_num} ({pmt.program_num:X2})");
+                                    PmtTtxtMap[_pmtTtxtMapCount++] = desc.ElementaryPid;
+                                    if (config.Tid == 0) config.Tid = desc.ElementaryPid;
+                                    Console.WriteLine($"- Found VBI/teletext stream ID {desc.ElementaryPid} ({desc.ElementaryPid:X2}) for SID {pmt.ProgramNum} ({pmt.ProgramNum:X2})");
                                 }
                             }
                         }
 
-                        i += 5 + desc.es_info_length;
+                        i += 5 + desc.EsInfoLength;
                     }
                 }
             }
         }
 
         // graceful exit support
-        private static bool exit_request = false;
-
-        private static void signal_handler(int sig)
-        {
-            if ((sig == SIGINT) || (sig == SIGTERM))
-            {
-                Console.WriteLine("- SIGINT/SIGTERM received, preparing graceful exit");
-                exit_request = true;
-            }
-        }
-
+        private static bool ExitRequest = false;
 
         private static string GetBaseName()
         {
@@ -1071,17 +1029,15 @@ namespace TelxCCSharp
         // main
         public static int RunMain(string[] args)
         {
-            int ret = EXIT_FAILURE;
-
             if (args.Length > 1 && args[1] == "-V")
             {
-                Console.WriteLine(TELXCC_VERSION);
-                return EXIT_SUCCESS;
+                Console.WriteLine(TelxccVersion);
+                return ExitSuccess;
             }
 
             Console.WriteLine("telxcc - TELeteXt Closed Captions decoder");
             Console.WriteLine("(c) Forers, s. r. o., <info@forers.com>, 2011-2014; Licensed under the GPL.");
-            Console.WriteLine($"Version {TELXCC_VERSION}");
+            Console.WriteLine($"Version {TelxccVersion}");
             Console.WriteLine();
 
             // command line params parsing
@@ -1113,48 +1069,48 @@ namespace TelxCCSharp
                     Console.WriteLine("              if REF (unix timestamp) is omitted, use current system time,");
                     Console.WriteLine("              telxcc will automatically switch to transport stream UTC timestamps when available");
 
-                    return (EXIT_SUCCESS);
+                    return (ExitSuccess);
                 }
 
                 if (arg == "-i" && argc > argIndex + 1)
                 {
-                    config.input_name = args[++argIndex];
+                    config.InputName = args[++argIndex];
                 }
                 else if (arg == "-o" && argc > argIndex + 1)
                 {
-                    config.output_name = args[++argIndex];
+                    config.OutputName = args[++argIndex];
                 }
                 else if (arg == "-p" && argc > argIndex + 1)
                 {
-                    config.page = Convert.ToInt32(args[++argIndex]);
+                    config.Page = Convert.ToInt32(args[++argIndex]);
                 }
                 else if (arg == "-t" && argc > argIndex + 1)
                 {
-                    config.tid = Convert.ToInt32(args[++argIndex]);
+                    config.Tid = Convert.ToInt32(args[++argIndex]);
                 }
                 else if (arg == "-f" && argc > argIndex + 1)
                 {
-                    config.offset = Convert.ToInt32(args[++argIndex]);
+                    config.Offset = Convert.ToInt32(args[++argIndex]);
                 }
                 else if (arg == "-n")
                 {
-                    config.bom = false;
+                    config.Bom = false;
                 }
                 else if (arg == "-1")
                 {
-                    config.nonempty = true;
+                    config.NonEmpty = true;
                 }
                 else if (arg == "-c")
                 {
-                    config.colours = true;
+                    config.Colours = true;
                 }
                 else if (arg == "-v")
                 {
-                    config.verbose = true;
+                    config.Verbose = true;
                 }
                 else if (arg == "-s")
                 {
-                    config.se_mode = true;
+                    config.SeMode = true;
                     ulong t = 0;
                     if (argc > argIndex + 1)
                     {
@@ -1166,78 +1122,75 @@ namespace TelxCCSharp
                         //time_t now = time(NULL);
                         t = 0;
                     }
-                    config.utc_refvalue = t;
+                    config.UtcRefValue = t;
                 }
                 else if (arg == "-m")
                 {
-                    config.m2ts = true;
+                    config.M2Ts = true;
                 }
                 else
                 {
                     Console.WriteLine($"! Unknown option {arg}");
                     Console.WriteLine($"- For usage options run {GetBaseName()} -h");
-                    return EXIT_FAILURE;
+                    return ExitFailure;
                 }
                 argIndex++;
             }
 
-            if (config.m2ts)
+            if (config.M2Ts)
             {
                 Console.WriteLine("- Processing input stream as a BDAV MPEG-2 Transport Stream");
             }
 
-            if (config.se_mode)
+            if (config.SeMode)
             {
-                var t0 = config.utc_refvalue;
+                var t0 = config.UtcRefValue;
                 Console.WriteLine($"- Search engine mode active, UTC referential value = {t0}");
             }
 
             // teletext page number out of range
-            if ((config.page != 0) && ((config.page < 100) || (config.page > 899)))
+            if ((config.Page != 0) && ((config.Page < 100) || (config.Page > 899)))
             {
                 Console.WriteLine("! Teletext page number could not be lower than 100 or higher than 899");
-                return EXIT_FAILURE;
+                return ExitFailure;
             }
 
             // default teletext page
-            if (config.page > 0)
+            if (config.Page > 0)
             {
                 // dec to BCD, magazine pages numbers are in BCD (ETSI 300 706)
-                config.page = ((config.page / 100) << 8) | (((config.page / 10) % 10) << 4) | (config.page % 10);
+                config.Page = ((config.Page / 100) << 8) | (((config.Page / 10) % 10) << 4) | (config.Page % 10);
             }
 
             // PID out of range
-            if (config.tid > 0x2000)
+            if (config.Tid > 0x2000)
             {
                 Console.WriteLine("! Transport stream PID could not be higher than 8192");
-                return EXIT_FAILURE;
+                return ExitFailure;
             }
 
             //signal(SIGINT, signal_handler);
             //signal(SIGTERM, signal_handler);
 
-            if (string.IsNullOrEmpty(config.input_name) || config.input_name == "-")
+            if (string.IsNullOrEmpty(config.InputName) || config.InputName == "-")
             {
                 Console.WriteLine($"! Please specify input file via the '-i <file name>' parameter");
-                return EXIT_FAILURE;
+                return ExitFailure;
             }
-            else
+            try
             {
-                try
-                {
-                    fin = new FileStream(config.input_name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"! Could not open input file {config.input_name}: {e.Message}");
-                    return EXIT_FAILURE;
-                }
+                _fin = new FileStream(config.InputName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"! Could not open input file {config.InputName}: {e.Message}");
+                return ExitFailure;
             }
 
-            if (fin.Length < 1) // isatty(fileno(fin)))
+            if (_fin.Length < 1) // isatty(fileno(fin)))
             {
                 Console.WriteLine("! STDIN is a terminal. STDIN must be redirected.");
-                return EXIT_FAILURE;
+                return ExitFailure;
             }
 
             ////TODO: make last or use stream????
@@ -1264,7 +1217,7 @@ namespace TelxCCSharp
             //setvbuf(fout, (char*)NULL, _IOFBF, 0);
 
             // print UTF-8 BOM chars
-            if (config.bom)
+            if (config.Bom)
             {
                 //fprintf(fout, "\xef\xbb\xbf");
                 //fflush(fout);
@@ -1273,193 +1226,193 @@ namespace TelxCCSharp
             // PROCESING
 
             // FYI, packet counter
-            var packet_counter = 0;
+            var packetCounter = 0;
 
             // TS packet buffer
-            var ts_packet_buffer = new byte[TS_PACKET_SIZE];
-            var ts_packet_size = TS_PACKET_SIZE - 4;
+            var tsPacketBuffer = new byte[TsPacketSize];
+            var tsPacketSize = TsPacketSize - 4;
 
             // pointer to TS packet buffer start
-            byte[] ts_packet = ts_packet_buffer;
+            byte[] tsPacket = tsPacketBuffer;
 
             // if telxcc is configured to be in M2TS mode, it reads larger packets and ignores first 4 bytes
-            if (config.m2ts)
+            if (config.M2Ts)
             {
-                ts_packet_size = TS_PACKET_SIZE;
-                ts_packet = new byte[ts_packet_size];
-                Buffer.BlockCopy(ts_packet_buffer, 4, ts_packet, 0, ts_packet_size);
+                tsPacketSize = TsPacketSize;
+                tsPacket = new byte[tsPacketSize];
+                Buffer.BlockCopy(tsPacketBuffer, 4, tsPacket, 0, tsPacketSize);
             }
 
             // 0xff means not set yet
-            var continuity_counter = 255;
+            var continuityCounter = 255;
 
             // PES packet buffer
-            byte[] payload_buffer = new byte[PAYLOAD_BUFFER_SIZE];
-            var payload_counter = 0;
+            byte[] payloadBuffer = new byte[PayloadBufferSize];
+            var payloadCounter = 0;
 
             // reading input
-            while (!exit_request && fin.Read(ts_packet_buffer, 0, ts_packet_size) == ts_packet_size)
+            while (!ExitRequest && _fin.Read(tsPacketBuffer, 0, tsPacketSize) == tsPacketSize)
             {
                 // not TS packet -- misaligned?
-                if (ts_packet[0] != SYNC_BYTE)
+                if (tsPacket[0] != SyncByte)
                 {
                     Console.WriteLine("! Invalid TS packet header; TS seems to be misaligned");
 
-                    int shift = 0;
-                    for (shift = 1; shift < TS_PACKET_SIZE; shift++) if (ts_packet[shift] == SYNC_BYTE) break;
+                    int shift;
+                    for (shift = 1; shift < TsPacketSize; shift++) if (tsPacket[shift] == SyncByte) break;
 
-                    if (shift < TS_PACKET_SIZE)
+                    if (shift < TsPacketSize)
                     {
-                        if (config.verbose) Console.WriteLine($"! TS-packet-header-like byte found shifted by {shift} bytes, aligning TS stream (at least one TS packet lost)");
-                        for (var i = shift; i < TS_PACKET_SIZE; i++) ts_packet[i - shift] = ts_packet[i];
-                        fin.Read(ts_packet_buffer, 0, TS_PACKET_SIZE - shift);
+                        if (config.Verbose) Console.WriteLine($"! TS-packet-header-like byte found shifted by {shift} bytes, aligning TS stream (at least one TS packet lost)");
+                        for (var i = shift; i < TsPacketSize; i++) tsPacket[i - shift] = tsPacket[i];
+                        _fin.Read(tsPacketBuffer, 0, TsPacketSize - shift);
                     }
                 }
 
                 // Transport Stream Header
                 // We do not use buffer to struct loading (e.g. ts_packet_t *header = (ts_packet_t *)ts_packet;)
                 // -- struct packing is platform dependent and not performing well.
-                var header = new ts_packet_t
+                var header = new TsPacket
                 {
-                    sync = ts_packet[0],
-                    transport_error = (ts_packet[1] & 0x80) >> 7,
-                    payload_unit_start = (ts_packet[1] & 0x40) >> 6,
-                    transport_priority = (ts_packet[1] & 0x20) >> 5,
-                    pid = ((ts_packet[1] & 0x1f) << 8) | ts_packet[2],
-                    scrambling_control = (ts_packet[3] & 0xc0) >> 6,
-                    adaptation_field_exists = (ts_packet[3] & 0x20) >> 5,
-                    continuity_counter = ts_packet[3] & 0x0f
+                    Sync = tsPacket[0],
+                    TransportError = (tsPacket[1] & 0x80) >> 7,
+                    PayloadUnitStart = (tsPacket[1] & 0x40) >> 6,
+                    TransportPriority = (tsPacket[1] & 0x20) >> 5,
+                    Pid = ((tsPacket[1] & 0x1f) << 8) | tsPacket[2],
+                    ScramblingControl = (tsPacket[3] & 0xc0) >> 6,
+                    AdaptationFieldExists = (tsPacket[3] & 0x20) >> 5,
+                    ContinuityCounter = tsPacket[3] & 0x0f
                 };
                 //uint8_t ts_payload_exists = (ts_packet[3] & 0x10) >> 4;
 
-                var af_discontinuity = 0;
-                if (header.adaptation_field_exists > 0)
+                var afDiscontinuity = 0;
+                if (header.AdaptationFieldExists > 0)
                 {
-                    af_discontinuity = (ts_packet[5] & 0x80) >> 7;
+                    afDiscontinuity = (tsPacket[5] & 0x80) >> 7;
                 }
 
                 // uncorrectable error?
-                if (header.transport_error > 0)
+                if (header.TransportError > 0)
                 {
-                    if (config.verbose) Console.WriteLine($"! Uncorrectable TS packet error (received CC {header.continuity_counter})");
+                    if (config.Verbose) Console.WriteLine($"! Uncorrectable TS packet error (received CC {header.ContinuityCounter})");
                     continue;
                 }
 
                 // if available, calculate current PCR
-                if (header.adaptation_field_exists > 0)
+                if (header.AdaptationFieldExists > 0)
                 {
                     // PCR in adaptation field
-                    var af_pcr_exists = (ts_packet[5] & 0x10) >> 4;
-                    if (af_pcr_exists > 0)
+                    var afPcrExists = (tsPacket[5] & 0x10) >> 4;
+                    if (afPcrExists > 0)
                     {
-                        ulong pts = ts_packet[6];
+                        ulong pts = tsPacket[6];
                         pts <<= 25;
-                        pts |= (ulong)((ts_packet[7] << 17));
-                        pts |= (ulong)((ts_packet[8] << 9));
-                        pts |= (ulong)((ts_packet[9] << 1));
-                        pts |= (ulong)((ts_packet[10] >> 7));
-                        global_timestamp = pts / 90;
-                        pts = (ulong)(((ts_packet[10] & 0x01) << 8));
-                        pts |= ts_packet[11];
-                        global_timestamp += pts / 27000;
+                        pts |= (ulong)(tsPacket[7] << 17);
+                        pts |= (ulong)(tsPacket[8] << 9);
+                        pts |= (ulong)(tsPacket[9] << 1);
+                        pts |= (ulong)(tsPacket[10] >> 7);
+                        _globalTimestamp = pts / 90;
+                        pts = (ulong)((tsPacket[10] & 0x01) << 8);
+                        pts |= tsPacket[11];
+                        _globalTimestamp += pts / 27000;
                     }
                 }
 
                 // null packet
-                if (header.pid == 0x1fff) continue;
+                if (header.Pid == 0x1fff) continue;
 
                 // TID not specified, autodetect via PAT/PMT
-                if (config.tid == 0)
+                if (config.Tid == 0)
                 {
                     // process PAT
-                    if (header.pid == 0x0000)
+                    if (header.Pid == 0x0000)
                     {
-                        var patPacket = new byte[TS_PACKET_PAYLOAD_SIZE];
-                        Buffer.BlockCopy(ts_packet, 4, patPacket, 0, TS_PACKET_PAYLOAD_SIZE);
-                        analyze_pat(patPacket, TS_PACKET_PAYLOAD_SIZE);
+                        var patPacket = new byte[TsPacketPayloadSize];
+                        Buffer.BlockCopy(tsPacket, 4, patPacket, 0, TsPacketPayloadSize);
+                        AnalyzePat(patPacket, TsPacketPayloadSize);
                         continue;
                     }
 
                     // process PMT
-                    if (in_array(pmt_map, pmt_map_count, header.pid) == bool_t.YES)
+                    if (InArray(PmtMap, _pmtMapCount, header.Pid))
                     {
-                        var pmtPacket = new byte[TS_PACKET_PAYLOAD_SIZE];
-                        Buffer.BlockCopy(ts_packet, 4, pmtPacket, 0, TS_PACKET_PAYLOAD_SIZE);
-                        analyze_pmt(pmtPacket, TS_PACKET_PAYLOAD_SIZE);
+                        var pmtPacket = new byte[TsPacketPayloadSize];
+                        Buffer.BlockCopy(tsPacket, 4, pmtPacket, 0, TsPacketPayloadSize);
+                        AnalyzePmt(pmtPacket, TsPacketPayloadSize);
                         continue;
                     }
                 }
 
                 // TID 0x2000 specified => dummy auto detection
-                if (config.tid == 0x2000)
+                if (config.Tid == 0x2000)
                 {
-                    if (header.payload_unit_start > 0)
+                    if (header.PayloadUnitStart > 0)
                     {
                         // searching for PES header and "Private Stream 1" stream_id
-                        ulong pes_prefix = (ulong)((ts_packet[4] << 16) | (ts_packet[5] << 8) | ts_packet[6]);
-                        var pes_stream_id = ts_packet[7];
+                        ulong pesPrefix = (ulong)((tsPacket[4] << 16) | (tsPacket[5] << 8) | tsPacket[6]);
+                        var pesStreamId = tsPacket[7];
 
-                        if ((pes_prefix == 0x000001) && (pes_stream_id == 0xbd))
+                        if (pesPrefix == 0x000001 && pesStreamId == 0xbd)
                         {
-                            config.tid = header.pid;
-                            Console.WriteLine($"- No teletext PID specified, first received suitable stream PID is {config.tid} ({config.tid:X2}), not guaranteed");
+                            config.Tid = header.Pid;
+                            Console.WriteLine($"- No teletext PID specified, first received suitable stream PID is {config.Tid} ({config.Tid:X2}), not guaranteed");
                             continue;
                         }
                     }
                 }
 
-                if (config.tid == header.pid)
+                if (config.Tid == header.Pid)
                 {
                     // TS continuity check
-                    if (continuity_counter == 255) continuity_counter = header.continuity_counter;
+                    if (continuityCounter == 255) continuityCounter = header.ContinuityCounter;
                     else
                     {
-                        if (af_discontinuity == 0)
+                        if (afDiscontinuity == 0)
                         {
-                            continuity_counter = (continuity_counter + 1) % 16;
-                            if (header.continuity_counter != continuity_counter)
+                            continuityCounter = (continuityCounter + 1) % 16;
+                            if (header.ContinuityCounter != continuityCounter)
                             {
-                                if (config.verbose)
-                                    Console.WriteLine($"- Missing TS packet, flushing pes_buffer (expected CC {continuity_counter}, received CC {header.continuity_counter}, TS discontinuity {(af_discontinuity != 0 ? "YES" : "NO")}, TS priority {(header.transport_priority != 0 ? "YES" : "NO")})");
-                                payload_counter = 0;
-                                continuity_counter = 255;
+                                if (config.Verbose)
+                                    Console.WriteLine($"- Missing TS packet, flushing pes_buffer (expected CC {continuityCounter}, received CC {header.ContinuityCounter}, TS discontinuity {(afDiscontinuity != 0 ? "YES" : "NO")}, TS priority {(header.TransportPriority != 0 ? "YES" : "NO")})");
+                                payloadCounter = 0;
+                                continuityCounter = 255;
                             }
                         }
                     }
 
                     // waiting for first payload_unit_start indicator
-                    if ((header.payload_unit_start == 0) && (payload_counter == 0)) continue;
+                    if (header.PayloadUnitStart == 0 && payloadCounter == 0) continue;
 
                     // proceed with payload buffer
-                    if ((header.payload_unit_start > 0) && (payload_counter > 0)) process_pes_packet(payload_buffer, payload_counter);
+                    if (header.PayloadUnitStart > 0 && payloadCounter > 0) ProcessPesPacket(payloadBuffer, payloadCounter);
 
                     // new payload frame start
-                    if (header.payload_unit_start > 0) payload_counter = 0;
+                    if (header.PayloadUnitStart > 0) payloadCounter = 0;
 
                     // add payload data to buffer
-                    if (payload_counter < (PAYLOAD_BUFFER_SIZE - TS_PACKET_PAYLOAD_SIZE))
+                    if (payloadCounter < PayloadBufferSize - TsPacketPayloadSize)
                     {
-                        Buffer.BlockCopy(ts_packet, 4, payload_buffer, payload_counter, TS_PACKET_PAYLOAD_SIZE);
-                        payload_counter += TS_PACKET_PAYLOAD_SIZE;
-                        packet_counter++;
+                        Buffer.BlockCopy(tsPacket, 4, payloadBuffer, payloadCounter, TsPacketPayloadSize);
+                        payloadCounter += TsPacketPayloadSize;
+                        packetCounter++;
                     }
-                    else if (config.verbose) Console.WriteLine("! Packet payload size exceeds payload_buffer size, probably not teletext stream");
+                    else if (config.Verbose) Console.WriteLine("! Packet payload size exceeds payload_buffer size, probably not teletext stream");
                 }
             }
 
             // output any pending close caption
-            if (page_buffer.tainted == (int)bool_t.YES)
+            if (PageBuffer.Tainted)
             {
                 // this time we do not subtract any frames, there will be no more frames
-                page_buffer.hide_timestamp = last_timestamp;
-                process_page(page_buffer);
+                PageBuffer.HideTimestamp = _lastTimestamp;
+                ProcessPage(PageBuffer);
             }
 
-            if (config.verbose)
+            if (config.Verbose)
             {
-                if (config.tid == 0)
+                if (config.Tid == 0)
                     Console.WriteLine($"- No teletext PID specified, no suitable PID found in PAT/PMT tables. Please specify teletext PID via -t parameter.{Environment.NewLine}  You can also specify -t 8192 for another type of autodetection (choosing the first suitable stream)");
-                if (frames_produced == 0)
+                if (_framesProduced == 0)
                     Console.WriteLine("- No frames produced. CC teletext page number was probably wrong.");
                 Console.Write("- There were some CC data carried via pages = ");
                 // We ignore i = 0xff, because 0xffs are teletext ending frames
@@ -1467,42 +1420,42 @@ namespace TelxCCSharp
                 {
                     for (var j = 0; j < 8; j++)
                     {
-                        var v = cc_map[i] & (1 << j);
+                        var v = CcMap[i] & (1 << j);
                         if (v > 0) Console.Write($"{((j + 1) << 8) | i:X2} ");
                     }
                 }
                 Console.WriteLine();
             }
 
-            if (!config.se_mode && frames_produced == 0 && config.nonempty)
+            if (!config.SeMode && _framesProduced == 0 && config.NonEmpty)
             {
-                fout.AppendLine("1");
-                fout.AppendLine("00:00:00,000 --> 00:00:01,000");
-                frames_produced++;
+                Fout.AppendLine("1");
+                Fout.AppendLine("00:00:00,000 --> 00:00:01,000");
+                _framesProduced++;
             }
 
-            Console.WriteLine($"- Done ({packet_counter:#,###,##0} teletext packets processed, {frames_produced} frames produced)");
+            Console.WriteLine($"- Done ({packetCounter:#,###,##0} teletext packets processed, {_framesProduced} frames produced)");
             Console.WriteLine("");
 
-            if (string.IsNullOrEmpty(config.output_name) || config.output_name == "-")
+            if (string.IsNullOrEmpty(config.OutputName) || config.OutputName == "-")
             {
-                Console.WriteLine(fout.ToString());
+                Console.WriteLine(Fout.ToString());
             }
             else
             {
                 try
                 {
-                    File.WriteAllText(config.output_name, fout.ToString(), new UTF8Encoding(config.bom));
+                    File.WriteAllText(config.OutputName, Fout.ToString(), new UTF8Encoding(config.Bom));
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
-                    Console.WriteLine($"! Could not write to output file {config.output_name}: {e.Message}");
-                    return EXIT_FAILURE;
+                    Console.WriteLine($"! Could not write to output file {config.OutputName}: {e.Message}");
+                    return ExitFailure;
                 }
             }
 
-            return EXIT_SUCCESS;
+            return ExitSuccess;
         }
     }
 }

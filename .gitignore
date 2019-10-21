@@ -352,3 +352,4 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 /src/TelxCC/Properties/launchSettings.json
+/test/UnitTests/Files/NOVA_PID-121_PAGE-888.ts

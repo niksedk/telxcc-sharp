@@ -2,15 +2,15 @@
 {
     public class Tables
     {
-        public enum g0_charsets_t
+        public enum G0CharsetsT
         {
-            LATIN = 0,
-            CYRILLIC1,
-            CYRILLIC2,
-            CYRILLIC3,
-            GREEK,
-            ARABIC,
-            HEBREW
+            Latin = 0,
+            Cyrillic1,
+            Cyrillic2,
+            Cyrillic3,
+            Greek,
+            Arabic,
+            Hebrew
         }
 
         // Note: All characters are encoded in UCS-2
@@ -102,7 +102,7 @@
         };
 
         // array positions where chars from G0_LATIN_NATIONAL_SUBSETS are injected into G0[LATIN]
-        public static readonly byte[] G0_LATIN_NATIONAL_SUBSETS_POSITIONS =
+        public static readonly byte[] G0LatinNationalSubsetsPositions =
         {
             0x03, 0x04, 0x20, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x5b, 0x5c, 0x5d, 0x5e
         };
@@ -123,7 +123,7 @@
             }
         }
 
-        public static readonly G0Language[] G0_LATIN_NATIONAL_SUBSETS =
+        public static readonly G0Language[] G0LatinNationalSubsets =
         {
             new G0Language("English",
                 new[]
@@ -206,7 +206,7 @@
         };
 
         // References to the G0_LATIN_NATIONAL_SUBSETS array
-        public static readonly byte[] G0_LATIN_NATIONAL_SUBSETS_MAP = new byte[56]
+        public static readonly byte[] G0LatinNationalSubsetsMap = new byte[56]
         {
             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
             0x08, 0x01, 0x02, 0x03, 0x04, 0xff, 0x06, 0xff,
@@ -244,7 +244,7 @@
             //	}
         };
 
-        public static readonly int[,] G2_ACCENTS = new int[15, 52]
+        public static readonly int[,] G2Accents = new int[15, 52]
         {
             // A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z
             {
